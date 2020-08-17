@@ -17,17 +17,19 @@ class Piece:
 
 class Player:
     def __init__(self, name: str):
-        self.pieces = list()
+        self.hand = list()
         self.name = name
 
     def addPiece(self, myPiece: Piece):
         '''
-        Adds a given piece from the player
+        Adds a given piece to the player's hand
 
-        Returns whether or not it was present (True, False)
+        Returns if add was successful
         '''
-        assert len(self.pieces) in range(7)
-        self.pieces.append(myPiece)
+        if len(self.hand) not in range(7):
+            return False
+        self.hand.append(myPiece)
+        return True
 
     def removePiece(self, myPiece):
         '''
@@ -35,9 +37,9 @@ class Player:
 
         Returns whether or not it was present (True, False)
         '''
-        for piece in self.pieces:
+        for piece in self.hand:
             if piece.equalTo(myPiece):
-                self.pieces.remove(myPiece)
+                self.hand.remove(myPiece)
                 return True
         return False
 
@@ -70,7 +72,7 @@ class Game:
     def printStatus(self):
         for player in self.players:
             print(player.name)
-            for piece in player.pieces:
+            for piece in player.hand:
                 print(piece.values, end='')
             print('\n')
 
