@@ -10,8 +10,8 @@ class Piece:
         self.sum = self.value1 + self.value2
 
     def equalTo(self, other):
-        match = self.value1 == other.value1 and self.value2 in other.value2
-        opp = self.value1 == other.value2 and self.value2 in other.value1
+        match = self.value1 == other.value1 and self.value2 == other.value2
+        opp = self.value1 == other.value2 and self.value2 == other.value1
         return match or opp
 
 
@@ -19,6 +19,10 @@ class Player:
     def __init__(self, name: str):
         self.hand = list()
         self.name = name
+
+    def clearHand(self):
+        for piece in self.hand:
+            self.removePiece(piece)
 
     def addPiece(self, myPiece: Piece):
         '''
@@ -58,9 +62,14 @@ class Game:
         for piece in allPieces:
             self.master.append(Piece(piece))
         self.currentAvailable = self.master
-        self.table = list()
-        end1, end2 = int(), int()
+        self.table, self.end1, self.end2 = list(), int(), int()
         self.players = players
+        self.metaWins = [0, 0, 0, 0]
+
+    def reset(self):
+        for player in self.players:
+            player.clearHand()
+        self.currentAvailable = self.master
 
     def shuffle(self):
         while len(self.currentAvailable) > 0:
@@ -76,6 +85,98 @@ class Game:
                 print(piece.values, end='')
             print('\n')
 
+    def possiblePlays(self, player: Player):
+        '''
+        Returns a list of possible pieces the player can play currently
+        (as a list of tuples: (Piece, endNumber))
+        '''
+        possible = list()
+        for piece in player.hand:
+            if self.end1 in piece.values:
+                possible.append((piece, '1'))
+            if self.end2 in piece.values:
+                possible.append((piece, '2'))
+        return possible
+
+    def count(self, player: Player):
+        total = 0
+        for piece in player.hand:
+            total += piece.value1 + piece.value2
+        return total
+
+    def win(self, player: Player):
+        score = 0
+        for otherPlayer in self.players:
+            if otherPlayer is not player:
+                score += self.count(otherPlayer)
+        return player, score
+
+    def printTable(self):
+        if len(self.table) == 0:
+            return "Empty"
+
+        master = str(self.table[0].values) + ' '
+        if len(self.table) == 1:
+            print(master)
+            return
+
+        for piece in self.table[1:]:
+            if piece.value1 == int(master[-3]):
+                master += str(piece.values) + ' '
+            else:
+                master += '({}, {}) '.format(piece.value2, piece.value1)
+        print(master)
+
+    def closed(self):
+        lowest = 69
+        lowestPlayer = Player('')
+        for player in self.players:
+            if self.count(player) < lowest:
+                lowest = self.count(player)
+                lowestPlayer = player
+        return self.win(lowestPlayer)
+
+    def start(self, strategy='random', trace=False):
+        passes = int()
+        while True:
+            passes = 0
+            for player in self.players:
+                possible = self.possiblePlays(player)
+                if len(possible) == 0:
+                    passes += 1
+                    if trace:
+                        print('Player: {} passes'.format(player.name))
+                    continue
+
+                # strategy switch
+                if strategy == 'random':
+                    piece, end = random.choice(possible)
+
+                # set new ends
+                if end == '1':
+                    if piece.value1 == self.end1:
+                        self.end1 = piece.value2
+                    else:
+                        self.end1 = piece.value1
+                    self.table.insert(0, piece)
+                else:
+                    if piece.value1 == self.end2:
+                        self.end2 = piece.value2
+                    else:
+                        self.end2 = piece.value1
+                    self.table.append(piece)
+                player.removePiece(piece)
+                if trace:
+                    print('Player: {} plays {}'.format(
+                        player.name, str(piece.values)))
+                    self.printTable()
+
+                # check win
+                if len(player.hand) == 0:
+                    return self.win(player)
+            if passes == 4:
+                return self.closed()
+
 
 names = ['John', 'Sally', 'Jane', 'Dan']
 players = list()
@@ -83,5 +184,7 @@ for name in names:
     players.append(Player(name))
 
 game1 = Game(players)
+game1.reset()
 game1.shuffle()
-game1.printStatus()
+result = game1.start(trace=True)
+print('\n{} wins with {} points'.format(result[0].name, result[1]))
