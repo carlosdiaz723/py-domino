@@ -237,17 +237,23 @@ class GameMaster:
         self.scores = [0, 0, 0, 0]
         self.wins = [0, 0, 0, 0]
         self.capicuaWins = [0, 0, 0, 0]
+        self.winRatios, self.capicuaRatios = list(), list()
         self.game = Game(self.players)
         self.maxScore = maxScore
         self.maxWins = maxWins
 
     def finish(self):
+        for winAmount, capAmount in zip(self.wins, self.capicuaWins):
+            self.winRatios.append(winAmount/self.gamesPlayed)
+            self.capicuaRatios.append(round(capAmount/winAmount, 5))
         return {'players': self.playerNames,
                 'wins': self.wins,
+                'wins (proportional)': self.winRatios,
                 'scores': self.scores,
-                'gamesPlayed': self.gamesPlayed,
-                'maxGames': self.maxGames,
-                'capicuaWins': self.capicuaWins}
+                'games played': self.gamesPlayed,
+                'max games': self.maxGames,
+                'capicuas': self.capicuaWins,
+                'capicuas per win': self.capicuaRatios}
 
     def run(self, trace=False):
         for _ in range(self.maxGames):
@@ -287,7 +293,7 @@ for t in tuples:
 
 
 names = ['John', 'Sally', 'Jane', 'Dan']
-gamemaster = GameMaster(names, maxGames=10000,
+gamemaster = GameMaster(names, maxGames=50000,
                         startingStrategy='random')
 result = gamemaster.run()
 pretty(result)
