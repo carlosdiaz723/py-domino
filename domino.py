@@ -48,7 +48,7 @@ class Player:
 
 class Game:
     def __init__(self, players: list):
-        self.currentAvailable = allPieces
+        self.currentAvailable = allPieces[:]
         self.table, self.end1, self.end2 = list(), int(), int()
         self.players = players
 
@@ -57,11 +57,9 @@ class Game:
             player.hand.clear()
         self.table.clear()
         self.end1, self.end2 = int(), int()
-        self.currentAvailable = allPieces
+        self.currentAvailable = allPieces[:]
 
     def shuffle(self):
-        print('allPieces: ')
-        self.printPieces(allPieces)
         for _ in range(7):
             for player in self.players:
                 randomPick = random.choice(self.currentAvailable)
@@ -156,7 +154,6 @@ class Game:
     def start(self, strategy, startingStrategy, trace=False):
         passes = int()
         for _ in range(25):
-            self.printPieces(allPieces)
             passes = 0
             for player in self.players:
                 # first move exception
@@ -209,8 +206,6 @@ class Game:
 
                 # check win
                 if len(player.hand) == 0:
-                    if trace:
-                        print('Player: {} WINS'.format(player.name))
                     return self.win(player)
             if passes == 4:
                 break
@@ -245,11 +240,11 @@ class GameMaster:
     def run(self, trace=False):
         for _ in range(self.maxGames):
             self.game.reset()
-            print('game reset')
             self.game.shuffle()
-            print('game shuffled')
             winner, score = self.game.start(
                 self.strategy, self.startingStrategy, trace)
+            if trace:
+                print('Player: {} WINS'.format(winner.name))
             self.wins[self.players.index(winner)] += 1
             self.scores[self.players.index(winner)] += score
             if self.maxWins is not None:
@@ -260,6 +255,7 @@ class GameMaster:
                 for s in self.scores:
                     if s >= self.maxScore:
                         return self.finish()
+            self.gamesPlayed += 1
         return self.finish()
 
 
@@ -277,6 +273,6 @@ for t in tuples:
 
 
 names = ['John', 'Sally', 'Jane', 'Dan']
-gamemaster = GameMaster(names, maxGames=10)
-result = gamemaster.run(trace=True)
+gamemaster = GameMaster(names, maxGames=1000)
+result = gamemaster.run()
 pretty(result)
