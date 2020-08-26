@@ -1,3 +1,4 @@
+from pprint import pprint as pretty
 import random
 
 
@@ -8,6 +9,7 @@ class Piece:
         self.value1 = values[0]
         self.value2 = values[1]
         self.sum = self.value1 + self.value2
+        self.isDouble = self.value1 == self.value2
 
     def equalTo(self, other):
         match = self.value1 == other.value1 and self.value2 == other.value2
@@ -19,10 +21,6 @@ class Player:
     def __init__(self, name: str):
         self.hand = list()
         self.name = name
-
-    def clearHand(self):
-        for piece in self.hand:
-            self.removePiece(piece)
 
     def addPiece(self, myPiece: Piece):
         '''
@@ -50,33 +48,30 @@ class Player:
 
 class Game:
     def __init__(self, players: list):
-        allPieces = [(6, 6),
-                     (6, 5), (5, 5),
-                     (6, 4), (5, 4), (4, 4),
-                     (6, 3), (5, 3), (4, 3), (3, 3),
-                     (6, 2), (5, 2), (4, 2), (3, 2), (2, 2),
-                     (6, 1), (5, 1), (4, 1), (3, 1), (2, 1), (1, 1),
-                     (6, 0), (5, 0), (4, 0), (3, 0), (2, 0), (1, 0), (0, 0)
-                     ]
-        self.master = list()
-        for piece in allPieces:
-            self.master.append(Piece(piece))
-        self.currentAvailable = self.master
+        self.currentAvailable = allPieces
         self.table, self.end1, self.end2 = list(), int(), int()
         self.players = players
-        self.metaWins = [0, 0, 0, 0]
 
     def reset(self):
         for player in self.players:
-            player.clearHand()
-        self.currentAvailable = self.master
+            player.hand.clear()
+        self.table.clear()
+        self.end1, self.end2 = int(), int()
+        self.currentAvailable = allPieces
 
     def shuffle(self):
-        while len(self.currentAvailable) > 0:
+        print('allPieces: ')
+        self.printPieces(allPieces)
+        for _ in range(7):
             for player in self.players:
                 randomPick = random.choice(self.currentAvailable)
                 self.currentAvailable.remove(randomPick)
                 player.addPiece(randomPick)
+
+    def printPieces(self, pieces: list()):
+        for piece in pieces:
+            print('({}, {}), '.format(piece.value1, piece.value2), end='')
+        print()
 
     def printStatus(self):
         for player in self.players:
@@ -91,6 +86,9 @@ class Game:
         (as a list of tuples: (Piece, endNumber))
         '''
         possible = list()
+        # opening move exception
+        if len(self.table) == 0:
+            return self.doubleOrLargest(player)
         for piece in player.hand:
             if self.end1 in piece.values:
                 possible.append((piece, '1'))
@@ -98,10 +96,29 @@ class Game:
                 possible.append((piece, '2'))
         return possible
 
+    def doubleOrLargest(self, player: Player):
+        doubles = list()
+        for piece in player.hand:
+            if piece.isDouble:
+                doubles.append(piece)
+        if len(doubles) > 0:
+            largestDouble = Piece((0, 0))
+            for piece in doubles:
+                if piece.value1 > largestDouble.value1:
+                    largestDouble = piece
+            return largestDouble
+        else:
+            # no doubles, play largest sum
+            largestPiece = Piece((0, 0))
+            for piece in player.hand:
+                if piece.sum > largestPiece.sum:
+                    largestPiece = piece
+            return largestPiece
+
     def count(self, player: Player):
         total = 0
         for piece in player.hand:
-            total += piece.value1 + piece.value2
+            total += piece.sum
         return total
 
     def win(self, player: Player):
@@ -136,14 +153,33 @@ class Game:
                 lowestPlayer = player
         return self.win(lowestPlayer)
 
-    def start(self, strategy='random', trace=False):
+    def start(self, strategy, startingStrategy, trace=False):
         passes = int()
-        while True:
+        for _ in range(25):
+            self.printPieces(allPieces)
             passes = 0
             for player in self.players:
+                # first move exception
+                if len(self.table) == 0:
+                    piece = Piece((0, 0))
+                    if startingStrategy == 'random':
+                        piece = random.choice(player.hand)
+                    elif startingStrategy == 'doubleOrLargest':
+                        piece = self.doubleOrLargest(player)
+                    self.end1, self.end2 = piece.values
+                    self.table.append(piece)
+                    player.removePiece(piece)
+                    if trace:
+                        print('Player: {} plays {}'.format(
+                            player.name, str(piece.values)))
+                        self.printTable()
+                    continue
+
                 possible = self.possiblePlays(player)
                 if len(possible) == 0:
                     passes += 1
+                    if passes == 4:
+                        break
                     if trace:
                         print('Player: {} passes'.format(player.name))
                     continue
@@ -173,18 +209,74 @@ class Game:
 
                 # check win
                 if len(player.hand) == 0:
+                    if trace:
+                        print('Player: {} WINS'.format(player.name))
                     return self.win(player)
             if passes == 4:
-                return self.closed()
+                break
+        if passes == 4:
+            return self.closed()
+
+
+class GameMaster:
+    def __init__(self, playerNames: list, maxGames=1, strategy='random',
+                 startingStrategy='random', maxScore=None, maxWins=None):
+        self.playerNames = playerNames
+        self.players = list()
+        for name in playerNames:
+            self.players.append(Player(name))
+        self.maxGames = maxGames
+        self.gamesPlayed = 0
+        self.strategy = strategy
+        self.startingStrategy = startingStrategy
+        self.scores = [0, 0, 0, 0]
+        self.wins = [0, 0, 0, 0]
+        self.game = Game(self.players)
+        self.maxScore = maxScore
+        self.maxWins = maxWins
+
+    def finish(self):
+        return {'players': self.playerNames,
+                'wins': self.wins,
+                'scores': self.scores,
+                'gamesPlayed': self.gamesPlayed,
+                'maxGames': self.maxGames}
+
+    def run(self, trace=False):
+        for _ in range(self.maxGames):
+            self.game.reset()
+            print('game reset')
+            self.game.shuffle()
+            print('game shuffled')
+            winner, score = self.game.start(
+                self.strategy, self.startingStrategy, trace)
+            self.wins[self.players.index(winner)] += 1
+            self.scores[self.players.index(winner)] += score
+            if self.maxWins is not None:
+                for w in self.wins:
+                    if w >= self.maxWins:
+                        return self.finish()
+            if self.maxScore is not None:
+                for s in self.scores:
+                    if s >= self.maxScore:
+                        return self.finish()
+        return self.finish()
+
+
+tuples = [(6, 6),
+          (6, 5), (5, 5),
+          (6, 4), (5, 4), (4, 4),
+          (6, 3), (5, 3), (4, 3), (3, 3),
+          (6, 2), (5, 2), (4, 2), (3, 2), (2, 2),
+          (6, 1), (5, 1), (4, 1), (3, 1), (2, 1), (1, 1),
+          (6, 0), (5, 0), (4, 0), (3, 0), (2, 0), (1, 0), (0, 0)
+          ]
+allPieces = list()
+for t in tuples:
+    allPieces.append(Piece(t))
 
 
 names = ['John', 'Sally', 'Jane', 'Dan']
-players = list()
-for name in names:
-    players.append(Player(name))
-
-game1 = Game(players)
-game1.reset()
-game1.shuffle()
-result = game1.start(trace=True)
-print('\n{} wins with {} points'.format(result[0].name, result[1]))
+gamemaster = GameMaster(names, maxGames=10)
+result = gamemaster.run(trace=True)
+pretty(result)
