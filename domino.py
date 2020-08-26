@@ -50,12 +50,14 @@ class Game:
     def __init__(self, players: list):
         self.currentAvailable = allPieces[:]
         self.table, self.end1, self.end2 = list(), int(), int()
+        self.capicuaWin = False
         self.players = players
 
     def reset(self):
         for player in self.players:
             player.hand.clear()
         self.table.clear()
+        self.capicuaWin = False
         self.end1, self.end2 = int(), int()
         self.currentAvailable = allPieces[:]
 
@@ -77,6 +79,9 @@ class Game:
             for piece in player.hand:
                 print(piece.values, end='')
             print('\n')
+
+    def isCapicua(self, piece: Piece):
+        return piece.equalTo(Piece((self.end1, self.end2)))
 
     def possiblePlays(self, player: Player):
         '''
@@ -100,14 +105,14 @@ class Game:
             if piece.isDouble:
                 doubles.append(piece)
         if len(doubles) > 0:
-            largestDouble = Piece((0, 0))
+            largestDouble = doubles[0]
             for piece in doubles:
                 if piece.value1 > largestDouble.value1:
                     largestDouble = piece
             return largestDouble
         else:
             # no doubles, play largest sum
-            largestPiece = Piece((0, 0))
+            largestPiece = player.hand[0]
             for piece in player.hand:
                 if piece.sum > largestPiece.sum:
                     largestPiece = piece
@@ -119,11 +124,14 @@ class Game:
             total += piece.sum
         return total
 
-    def win(self, player: Player):
+    def win(self, player: Player, capicua=False):
         score = 0
         for otherPlayer in self.players:
             if otherPlayer is not player:
                 score += self.count(otherPlayer)
+        if capicua:
+            self.capicuaWin = True
+            score *= 2
         return player, score
 
     def printTable(self):
@@ -185,6 +193,15 @@ class Game:
                 if strategy == 'random':
                     piece, end = random.choice(possible)
 
+                player.removePiece(piece)
+                if trace:
+                    print('Player: {} plays {}'.format(
+                        player.name, str(piece.values)))
+
+                # check win
+                if len(player.hand) == 0:
+                    return self.win(player, capicua=self.isCapicua(piece))
+
                 # set new ends
                 if end == '1':
                     if piece.value1 == self.end1:
@@ -198,15 +215,8 @@ class Game:
                     else:
                         self.end2 = piece.value1
                     self.table.append(piece)
-                player.removePiece(piece)
                 if trace:
-                    print('Player: {} plays {}'.format(
-                        player.name, str(piece.values)))
                     self.printTable()
-
-                # check win
-                if len(player.hand) == 0:
-                    return self.win(player)
             if passes == 4:
                 break
         if passes == 4:
@@ -215,7 +225,7 @@ class Game:
 
 class GameMaster:
     def __init__(self, playerNames: list, maxGames=1, strategy='random',
-                 startingStrategy='random', maxScore=None, maxWins=None):
+                 startingStrategy='random', maxScore=None, maxWins=None, startingPlayer='random'):
         self.playerNames = playerNames
         self.players = list()
         for name in playerNames:
@@ -226,6 +236,7 @@ class GameMaster:
         self.startingStrategy = startingStrategy
         self.scores = [0, 0, 0, 0]
         self.wins = [0, 0, 0, 0]
+        self.capicuaWins = [0, 0, 0, 0]
         self.game = Game(self.players)
         self.maxScore = maxScore
         self.maxWins = maxWins
@@ -235,7 +246,8 @@ class GameMaster:
                 'wins': self.wins,
                 'scores': self.scores,
                 'gamesPlayed': self.gamesPlayed,
-                'maxGames': self.maxGames}
+                'maxGames': self.maxGames,
+                'capicuaWins': self.capicuaWins}
 
     def run(self, trace=False):
         for _ in range(self.maxGames):
@@ -246,6 +258,8 @@ class GameMaster:
             if trace:
                 print('Player: {} WINS'.format(winner.name))
             self.wins[self.players.index(winner)] += 1
+            if self.game.capicuaWin:
+                self.capicuaWins[self.players.index(winner)] += 1
             self.scores[self.players.index(winner)] += score
             if self.maxWins is not None:
                 for w in self.wins:
@@ -273,6 +287,7 @@ for t in tuples:
 
 
 names = ['John', 'Sally', 'Jane', 'Dan']
-gamemaster = GameMaster(names, maxGames=1000)
+gamemaster = GameMaster(names, maxGames=10000,
+                        startingStrategy='random')
 result = gamemaster.run()
 pretty(result)
