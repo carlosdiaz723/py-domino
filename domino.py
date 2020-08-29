@@ -54,6 +54,7 @@ class Game:
     def __init__(self, players: list):
         self.currentAvailable = allPieces[:]
         self.table, self.end1, self.end2 = list(), int(), int()
+        self.closes = 0
         self.capicuaWin = False
         self.players = players
 
@@ -155,8 +156,9 @@ class Game:
         print(master)
 
     def closed(self):
-        lowest = 69
-        lowestPlayer = Player('')
+        self.closes += 1
+        lowest = 1000
+        lowestPlayer = self.players[0]
         for player in self.players:
             if self.count(player) < lowest:
                 lowest = self.count(player)
@@ -255,10 +257,12 @@ class GameMaster:
             playerstats['wins_per_game'] = round(
                 player.wins/self.gamesPlayed, 2)
             playerstats['capicuas'] = player.capicuaWins
-            playerstats['capicuas_per_win'] = player.capicuaWins/player.wins
+            playerstats['capicuas_per_win'] = round(
+                player.capicuaWins/player.wins, 2)
             playerstats['score'] = player.score
             players[player.name] = playerstats
         master['players'] = players
+        master['closes'] = self.game.closes
         master['max_games'] = self.maxGames
         master['games_played'] = self.gamesPlayed
         master['max_wins'] = self.maxWins
@@ -308,6 +312,6 @@ names = ['John', 'Sally', 'Jane', 'Dan']
 startingStrategies = allDol
 strategies = allRandom
 gamemaster = GameMaster(names, strategies=strategies,
-                        startingStrategies=startingStrategies, maxGames=50000)
-result = gamemaster.run()
+                        startingStrategies=startingStrategies, maxGames=10000)
+result = gamemaster.run(trace=False)
 pretty(result)
