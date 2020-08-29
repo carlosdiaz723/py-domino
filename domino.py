@@ -3,6 +3,18 @@ import random
 
 
 class Piece:
+    '''
+    ATTRIBUTES      TYPE
+    value1          int
+    value2          int
+    sum             int
+    isDouble        bool
+
+
+    METHODS
+    equalTo()       bool
+    '''
+
     def __init__(self, values: tuple):
         assert values[0] in range(7) and values[1] in range(7)
         self.values = values
@@ -18,6 +30,24 @@ class Piece:
 
 
 class Player:
+    '''
+    A Player has a name, hand of pieces, strategies,
+    and keeps track of their own score and wins.
+
+    ATTRIBUTES          TYPE
+    hand                list(Pieces)
+    name                str
+    strategy            str
+    startingStrategy    str
+    score               int
+    wins                int
+    capicuaWins         int
+
+    METHODS
+    addPiece(Piece)     bool (success flag)
+    removePiece(Piece)  bool (success flag)
+    '''
+
     def __init__(self, name: str, strategy='random',
                  startingStrategy='random'):
         self.hand = list()
@@ -51,6 +81,25 @@ class Player:
 
 
 class Game:
+    '''
+    A Game has players and a table and simulates gameplay.
+
+    ATTRIBUTES          TYPE                DESCRIPTION
+    currentAvailable    list(Pieces)        the pieces available to be
+                                                picked up by players
+
+    table               list(Pieces)        the pieces that have been played
+
+    closes              int                 the number of games that have ended
+                                                closed (game is decided by
+                                                lowest count)
+
+    capicuaWin          bool                True if most recent win was capicua
+
+    players             list(Players)       players in the game in turn order
+    end1, end2          int, int            the current ends of the table
+    '''
+
     def __init__(self, players: list):
         self.currentAvailable = allPieces[:]
         self.table, self.end1, self.end2 = list(), int(), int()
@@ -59,6 +108,9 @@ class Game:
         self.players = players
 
     def reset(self):
+        '''
+        clear hands and table for a new game
+        '''
         for player in self.players:
             player.hand.clear()
         self.table.clear()
@@ -67,6 +119,9 @@ class Game:
         self.currentAvailable = allPieces[:]
 
     def shuffle(self):
+        '''
+        randomly assign pieces to each player
+        '''
         for _ in range(7):
             for player in self.players:
                 randomPick = random.choice(self.currentAvailable)
@@ -79,6 +134,9 @@ class Game:
         print()
 
     def printStatus(self):
+        '''
+        prints player names and current hands
+        '''
         for player in self.players:
             print(player.name)
             for piece in player.hand:
@@ -86,6 +144,10 @@ class Game:
             print('\n')
 
     def isCapicua(self, piece: Piece):
+        '''
+        True if given piece can be played on both current ends;
+        False otherwise
+        '''
         return piece.equalTo(Piece((self.end1, self.end2)))
 
     def possiblePlays(self, player: Player):
@@ -94,9 +156,6 @@ class Game:
         (as a list of tuples: (Piece, endNumber))
         '''
         possible = list()
-        # opening move exception
-        if len(self.table) == 0:
-            return self.doubleOrLargest(player)
         for piece in player.hand:
             if self.end1 in piece.values:
                 possible.append((piece, '1'))
@@ -105,6 +164,13 @@ class Game:
         return possible
 
     def doubleOrLargest(self, player: Player):
+        '''
+        implementation of 'double or largest' opening strategy
+
+        Player will select a piece that is
+        1) The largest double in their hand, or if Player has no doubles,
+        2) has the largest sum in their hand
+        '''
         doubles = list()
         for piece in player.hand:
             if piece.isDouble:
@@ -124,12 +190,19 @@ class Game:
             return largestPiece
 
     def count(self, player: Player):
+        '''
+        returns a total count of the Player's hand
+        '''
         total = 0
         for piece in player.hand:
             total += piece.sum
         return total
 
     def win(self, player: Player, capicua=False):
+        '''
+        returns a tuple of (Player, int) which corresponds to
+        the winning player and their score
+        '''
         score = 0
         for otherPlayer in self.players:
             if otherPlayer is not player:
@@ -140,6 +213,10 @@ class Game:
         return player, score
 
     def printTable(self):
+        '''
+        prints pieces currently on table and attempts to orient
+        them so that adjacent pieces correctly fit with each other
+        '''
         if len(self.table) == 0:
             return "Empty"
 
@@ -156,6 +233,11 @@ class Game:
         print(master)
 
     def closed(self):
+        '''
+        closed() is an indirect call to win(Player)
+        closed() determines the winner as the player with the lowest count
+        score is calculated as usual (sum of other player's counts)
+        '''
         self.closes += 1
         lowest = 1000
         lowestPlayer = self.players[0]
@@ -166,6 +248,10 @@ class Game:
         return self.win(lowestPlayer)
 
     def start(self, trace=False):
+        '''
+        starts and runs the game
+        optional trace bool allows for printing info as the game progresses
+        '''
         passes = int()
         for _ in range(25):
             passes = 0
@@ -230,6 +316,10 @@ class Game:
 
 
 class GameMaster:
+    '''
+    handles multiple games and keeps track of stats
+    '''
+
     def __init__(self, playerNames: list, strategies: list,
                  startingStrategies: list, maxGames=1, maxScore=None,
                  maxWins=None, startingPlayer='random'):
@@ -327,6 +417,6 @@ startingStrategies = allRandom
 strategies = allRandom
 gamemaster = GameMaster(names, strategies=strategies,
                         startingStrategies=startingStrategies,
-                        startingPlayer=startingPlayer, maxGames=50000)
+                        startingPlayer=startingPlayer, maxGames=50_000)
 result = gamemaster.run(trace=False)
 pretty(result)
