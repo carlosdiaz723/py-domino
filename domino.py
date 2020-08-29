@@ -24,6 +24,7 @@ class Player:
         self.name = name
         self.strategy = strategy
         self.startingStrategy = startingStrategy
+        self.score, self.wins, self.capicuaWins = int(), int(), int()
 
     def addPiece(self, myPiece: Piece):
         '''
@@ -239,26 +240,30 @@ class GameMaster:
                 Player(name, strategies[index], startingStrategies[index]))
         self.maxGames = maxGames
         self.gamesPlayed = 0
-        self.scores = [0, 0, 0, 0]
-        self.wins = [0, 0, 0, 0]
-        self.capicuaWins = [0, 0, 0, 0]
-        self.winRatios, self.capicuaRatios = list(), list()
         self.game = Game(self.players)
         self.maxScore = maxScore
         self.maxWins = maxWins
 
     def finish(self):
-        for winAmount, capAmount in zip(self.wins, self.capicuaWins):
-            self.winRatios.append(winAmount/self.gamesPlayed)
-            self.capicuaRatios.append(round(capAmount/winAmount, 5))
-        return {'players': self.playerNames,
-                'wins': self.wins,
-                'wins (proportional)': self.winRatios,
-                'scores': self.scores,
-                'games played': self.gamesPlayed,
-                'max games': self.maxGames,
-                'capicuas': self.capicuaWins,
-                'capicuas per win': self.capicuaRatios}
+        master = dict()
+        players = dict()
+        for player in self.players:
+            playerstats = dict()
+            playerstats['strategy'] = player.strategy
+            playerstats['starting_strategy'] = player.startingStrategy
+            playerstats['wins'] = player.wins
+            playerstats['wins_per_game'] = round(
+                player.wins/self.gamesPlayed, 2)
+            playerstats['capicuas'] = player.capicuaWins
+            playerstats['capicuas_per_win'] = player.capicuaWins/player.wins
+            playerstats['score'] = player.score
+            players[player.name] = playerstats
+        master['players'] = players
+        master['max_games'] = self.maxGames
+        master['games_played'] = self.gamesPlayed
+        master['max_wins'] = self.maxWins
+        master['max_score'] = self.maxScore
+        return master
 
     def run(self, trace=False):
         for _ in range(self.maxGames):
@@ -267,18 +272,16 @@ class GameMaster:
             winner, score = self.game.start(trace)
             if trace:
                 print('Player: {} WINS'.format(winner.name))
-            self.wins[self.players.index(winner)] += 1
+            winner.wins += 1
             if self.game.capicuaWin:
-                self.capicuaWins[self.players.index(winner)] += 1
-            self.scores[self.players.index(winner)] += score
+                winner.capicuaWins += 1
+            winner.score += score
             if self.maxWins is not None:
-                for w in self.wins:
-                    if w >= self.maxWins:
-                        return self.finish()
+                if winner.wins >= self.maxWins:
+                    return self.finish()
             if self.maxScore is not None:
-                for s in self.scores:
-                    if s >= self.maxScore:
-                        return self.finish()
+                if winner.score >= self.maxScore:
+                    return self.finish()
             self.gamesPlayed += 1
         return self.finish()
 
