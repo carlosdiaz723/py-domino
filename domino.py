@@ -18,9 +18,12 @@ class Piece:
 
 
 class Player:
-    def __init__(self, name: str):
+    def __init__(self, name: str, strategy='random',
+                 startingStrategy='random'):
         self.hand = list()
         self.name = name
+        self.strategy = strategy
+        self.startingStrategy = startingStrategy
         self.score, self.wins, self.capicuaWins = int(), int(), int()
 
     def addPiece(self, myPiece: Piece):
@@ -160,7 +163,7 @@ class Game:
                 lowestPlayer = player
         return self.win(lowestPlayer)
 
-    def start(self, strategy, startingStrategy, trace=False):
+    def start(self, trace=False):
         passes = int()
         for _ in range(25):
             passes = 0
@@ -168,9 +171,9 @@ class Game:
                 # first move exception
                 if len(self.table) == 0:
                     piece = Piece((0, 0))
-                    if startingStrategy == 'random':
+                    if player.startingStrategy == 'random':
                         piece = random.choice(player.hand)
-                    elif startingStrategy == 'doubleOrLargest':
+                    elif player.startingStrategy == 'doubleOrLargest':
                         piece = self.doubleOrLargest(player)
                     self.end1, self.end2 = piece.values
                     self.table.append(piece)
@@ -191,7 +194,7 @@ class Game:
                     continue
 
                 # strategy switch
-                if strategy == 'random':
+                if player.strategy == 'random':
                     piece, end = random.choice(possible)
 
                 player.removePiece(piece)
@@ -225,17 +228,18 @@ class Game:
 
 
 class GameMaster:
-    def __init__(self, playerNames: list, maxGames=1, strategy='random',
-                 startingStrategy='random', maxScore=None, maxWins=None, startingPlayer='random'):
+    def __init__(self, playerNames: list, strategies: list,
+                 startingStrategies: list, maxGames=1, maxScore=None,
+                 maxWins=None, startingPlayer='random'):
         self.playerNames = playerNames
+        self.strategies = strategies
+        self.startingStrategies = startingStrategies
         self.players = list()
-        for name in playerNames:
-            self.players.append(Player(name))
+        for index, name in enumerate(playerNames):
+            self.players.append(
+                Player(name, strategies[index], startingStrategies[index]))
         self.maxGames = maxGames
         self.gamesPlayed = 0
-        self.strategy = strategy
-        self.startingStrategy = startingStrategy
-        self.winRatios, self.capicuaRatios = list(), list()
         self.game = Game(self.players)
         self.maxScore = maxScore
         self.maxWins = maxWins
@@ -265,8 +269,7 @@ class GameMaster:
         for _ in range(self.maxGames):
             self.game.reset()
             self.game.shuffle()
-            winner, score = self.game.start(
-                self.strategy, self.startingStrategy, trace)
+            winner, score = self.game.start(trace)
             if trace:
                 print('Player: {} WINS'.format(winner.name))
             winner.wins += 1
@@ -295,9 +298,16 @@ allPieces = list()
 for t in tuples:
     allPieces.append(Piece(t))
 
+r = 'random'
+dol = 'doubleOrLargest'
+allRandom = [r, r, r, r]
+allDol = [dol, dol, dol, dol]
+
 
 names = ['John', 'Sally', 'Jane', 'Dan']
-gamemaster = GameMaster(names, maxGames=50000,
-                        startingStrategy='random')
+startingStrategies = allDol
+strategies = allRandom
+gamemaster = GameMaster(names, strategies=strategies,
+                        startingStrategies=startingStrategies, maxGames=50000)
 result = gamemaster.run()
 pretty(result)
