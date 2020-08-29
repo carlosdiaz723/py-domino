@@ -241,6 +241,7 @@ class GameMaster:
             self.players.append(
                 Player(name, strategies[index], startingStrategies[index]))
         self.maxGames = maxGames
+        self.startingPlayer = startingPlayer
         self.gamesPlayed = 0
         self.game = Game(self.players)
         self.maxScore = maxScore
@@ -255,14 +256,18 @@ class GameMaster:
             playerstats['starting_strategy'] = player.startingStrategy
             playerstats['wins'] = player.wins
             playerstats['wins_per_game'] = round(
-                player.wins/self.gamesPlayed, 2)
+                player.wins/self.gamesPlayed, 3)
             playerstats['capicuas'] = player.capicuaWins
-            playerstats['capicuas_per_win'] = round(
-                player.capicuaWins/player.wins, 2)
+            try:
+                playerstats['capicuas_per_win'] = round(
+                    player.capicuaWins/player.wins, 3)
+            except ZeroDivisionError:
+                playerstats['capicuas_per_win'] = 0
             playerstats['score'] = player.score
             players[player.name] = playerstats
         master['players'] = players
         master['closes'] = self.game.closes
+        master['closes_per_game'] = self.game.closes/self.gamesPlayed
         master['max_games'] = self.maxGames
         master['games_played'] = self.gamesPlayed
         master['max_wins'] = self.maxWins
@@ -287,6 +292,13 @@ class GameMaster:
                 if winner.score >= self.maxScore:
                     return self.finish()
             self.gamesPlayed += 1
+            if self.startingPlayer == 'random':
+                random.shuffle(self.game.players)
+            elif self.startingPlayer == 'winner':
+                index = self.game.players.index(winner)
+                self.game.players = self.game.players[index:] + \
+                    self.game.players[:index]
+
         return self.finish()
 
 
@@ -309,9 +321,12 @@ allDol = [dol, dol, dol, dol]
 
 
 names = ['John', 'Sally', 'Jane', 'Dan']
-startingStrategies = allDol
+# first game order is always as set above
+startingPlayer = 'winner'
+startingStrategies = allRandom
 strategies = allRandom
 gamemaster = GameMaster(names, strategies=strategies,
-                        startingStrategies=startingStrategies, maxGames=10000)
+                        startingStrategies=startingStrategies,
+                        startingPlayer=startingPlayer, maxGames=50000)
 result = gamemaster.run(trace=False)
 pretty(result)
