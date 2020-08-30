@@ -1,4 +1,6 @@
 from pprint import pprint as pretty
+import matplotlib.pyplot as plt
+import numpy as np
 import random
 
 
@@ -42,6 +44,8 @@ class Player:
     score               int
     wins                int
     capicuaWins         int
+    cumulativeWins      list(int)
+    cumulativeScores    list(int)
 
     METHODS
     addPiece(Piece)     bool (success flag)
@@ -54,7 +58,8 @@ class Player:
         self.name = name
         self.strategy = strategy
         self.startingStrategy = startingStrategy
-        self.score, self.wins, self.capicuaWins = int(), int(), int()
+        self.score, self.wins, self.capicuaWins = 0, 0, 0
+        self.cumulativeWins, self.cumulativeScores = list(), list()
 
     def addPiece(self, myPiece: Piece):
         '''
@@ -372,16 +377,20 @@ class GameMaster:
             if trace:
                 print('Player: {} WINS'.format(winner.name))
             winner.wins += 1
+            for player in self.game.players:
+                player.cumulativeWins.append(player.wins)
             if self.game.capicuaWin:
                 winner.capicuaWins += 1
             winner.score += score
+            for player in self.game.players:
+                player.cumulativeScores.append(player.score)
+            self.gamesPlayed += 1
             if self.maxWins is not None:
                 if winner.wins >= self.maxWins:
                     return self.finish()
             if self.maxScore is not None:
                 if winner.score >= self.maxScore:
                     return self.finish()
-            self.gamesPlayed += 1
             if self.startingPlayer == 'random':
                 random.shuffle(self.game.players)
             elif self.startingPlayer == 'winner':
@@ -390,6 +399,22 @@ class GameMaster:
                     self.game.players[:index]
 
         return self.finish()
+
+    def plotHelp(self):
+        x = np.arange(1, self.gamesPlayed + 1)
+        _, ax = plt.subplots(2)
+        winsList, scoresList = list(), list()
+        for player in self.game.players:
+            winsList.append(np.array(player.cumulativeWins))
+            scoresList.append(np.array(player.cumulativeScores))
+        for index in range(4):
+            ax[0].plot(x, winsList[index], label=self.game.players[index].name)
+            ax[1].plot(x, scoresList[index],
+                       label=self.game.players[index].name)
+        ax.flat[0].set(xlabel='Games Played', ylabel='Wins')
+        ax.flat[1].set(xlabel='Games Played', ylabel='Scores')
+        plt.legend(loc='upper left')
+        plt.show()
 
 
 tuples = [(6, 6),
@@ -413,10 +438,11 @@ allDol = [dol, dol, dol, dol]
 names = ['John', 'Sally', 'Jane', 'Dan']
 # first game order is always as set above
 startingPlayer = 'winner'
-startingStrategies = allRandom
+startingStrategies = allDol
 strategies = allRandom
 gamemaster = GameMaster(names, strategies=strategies,
                         startingStrategies=startingStrategies,
-                        startingPlayer=startingPlayer, maxGames=50_000)
+                        startingPlayer=startingPlayer, maxGames=500)
 result = gamemaster.run(trace=False)
 pretty(result)
+gamemaster.plotHelp()
