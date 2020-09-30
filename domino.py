@@ -516,7 +516,7 @@ def fillDefaults():
     defaultStrategies = [r, r, r, r]
     defaultStartingPlayer = 'winner'
     defaultTrace = 'False'
-    defaultMaxGames = 10_000
+    defaultMaxGames = 1000
 
     for i in range(4):
         nameFields[i].insert(0, defaultNames[i])
@@ -529,43 +529,48 @@ def fillDefaults():
 
 master = tk.Tk()
 master.title('Domino Simulation Inputs')
+master.option_add('*Font', 'Times 22')
 tk.Button(master, text='Abort', command=exit).grid(row=10, column=0)
+tk.Button(master, text='Clear', command=clearFields).grid(row=10, column=1)
 tk.Button(master, text='Defaults', command=fillDefaults).grid(row=10, column=2)
 tk.Button(master, text='Submit', command=masterRun).grid(row=10, column=4)
 
 nameFields, startingStrategyFields, strategyFields = list(), list(), list()
 for i in range(4):
-    tk.Label(master, text='Name {}:'.format(i+1)).grid(row=i)
+    tk.Label(master, text='Name {}:'.format(i+1)).grid(row=i, padx=5, pady=5)
     e = tk.Entry(master)
-    e.grid(row=i, column=1)
+    e.grid(row=i, column=1, padx=5, pady=5)
     nameFields.append(e)
-    tk.Label(master, text='Starting Strategy:').grid(row=i, column=2)
+    tk.Label(master, text='Starting Strategy:').grid(
+        row=i, column=2, padx=5, pady=5)
     e = tk.Entry(master)
-    e.grid(row=i, column=3)
+    e.grid(row=i, column=3, padx=5, pady=5)
     startingStrategyFields.append(e)
-    tk.Label(master, text='Game Strategy:').grid(row=i, column=4)
+    tk.Label(master, text='Game Strategy:').grid(
+        row=i, column=4, padx=5, pady=5)
     e = tk.Entry(master)
-    e.grid(row=i, column=5)
+    e.grid(row=i, column=5, padx=5, pady=5)
     strategyFields.append(e)
 
-tk.Label(master, text='starting Player:').grid(row=6, column=0)
+tk.Label(master, text='starting Player:').grid(
+    row=6, column=0, padx=5, pady=10)
 startingPlayerField = tk.Entry(master)
-startingPlayerField.grid(row=6, column=1)
+startingPlayerField.grid(row=6, column=1, padx=5, pady=10)
 
-tk.Label(master, text='trace?').grid(row=6, column=2)
+tk.Label(master, text='trace?').grid(row=6, column=2, padx=5, pady=10)
 traceField = tk.Entry(master)
-traceField.grid(row=6, column=3)
+traceField.grid(row=6, column=3, padx=5, pady=10)
 
-tk.Label(master, text='max # of games:').grid(row=7, column=0)
+tk.Label(master, text='max # of games:').grid(row=7, column=0, padx=5, pady=10)
 maxGamesField = tk.Entry(master)
-maxGamesField.grid(row=7, column=1)
+maxGamesField.grid(row=7, column=1, padx=5, pady=10)
 
-tk.Label(master, text='max score:').grid(row=7, column=2)
+tk.Label(master, text='max score:').grid(row=7, column=2, padx=5, pady=10)
 maxScoreField = tk.Entry(master)
-maxScoreField.grid(row=7, column=3)
+maxScoreField.grid(row=7, column=3, padx=5, pady=10)
 
-tk.Label(master, text='max # of wins:').grid(row=7, column=4)
+tk.Label(master, text='max # of wins:').grid(row=7, column=4, padx=5, pady=10)
 maxWinsField = tk.Entry(master)
-maxWinsField.grid(row=7, column=5)
+maxWinsField.grid(row=7, column=5, padx=5, pady=10)
 
 tk.mainloop()
