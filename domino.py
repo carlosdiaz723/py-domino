@@ -2,7 +2,6 @@ from pprint import pprint as pretty
 import matplotlib.pyplot as plt
 import numpy as np
 import random
-import sys
 
 
 class Piece:
@@ -170,6 +169,31 @@ class Game:
                 possible.append((piece, '2'))
         return possible
 
+    def maxOptionsStrategy(self, possiblePlays: list):
+        '''
+        Play the piece that minimizes the loss of options,
+        highest value breaks tie
+        '''
+        if len(possiblePlays) == 1:
+            return possiblePlays[0]
+
+        options = [0, 0, 0, 0, 0, 0, 0]
+        for play in possiblePlays:
+            options[play[0].value1] += 1
+            options[play[0].value2] += 1
+
+        optionPairs = list()
+        for i in range(7):
+            for j in range(7):
+                optionPairs.append(((i, j), (options[i], options[j])))
+        sortedPairs = sorted(
+            optionPairs, key=lambda pair: pair[1][0]+pair[1][1], reverse=True)
+
+        for pair in sortedPairs:
+            for play in possiblePlays:
+                if play[0].equalTo(Piece((pair[0][0], pair[0][1]))):
+                    return play
+
     def doubleOrLargest(self, player: Player):
         '''
         implementation of 'double or largest' opening strategy
@@ -260,6 +284,8 @@ class Game:
         optional trace bool allows for printing info as the game progresses
         '''
         passes = int()
+        if trace:
+            self.printStatus()
         for _ in range(25):
             passes = 0
             for player in self.players:
@@ -291,6 +317,8 @@ class Game:
                 # strategy switch
                 if player.strategy == 'random':
                     piece, end = random.choice(possible)
+                elif player.strategy == 'maxOptions':
+                    piece, end = self.maxOptionsStrategy(possible)
 
                 player.removePiece(piece)
                 if trace:
@@ -433,20 +461,23 @@ class GameMaster:
         plt.show()
 
 
+# presets
 r = 'random'
 dol = 'doubleOrLargest'
 allRandom = [r, r, r, r]
 allDol = [dol, dol, dol, dol]
 
-names = ['John', 'Sally', 'Jane', 'Dan']
+
+names = ['Sally', 'John', 'Jane', 'Dan']
 # first game order is always as set above
+
 startingPlayer = 'winner'
-startingStrategies = allDol
-strategies = allRandom
+startingStrategies = allRandom
+strategies = ['maxOptions', r, r, r]
 
 gamemaster = GameMaster(names, strategies=strategies,
                         startingStrategies=startingStrategies,
-                        startingPlayer=startingPlayer, maxGames=500)
+                        startingPlayer=startingPlayer, maxGames=25_000)
 result = gamemaster.run(trace=False)
 pretty(result)
 gamemaster.plotHelp()
