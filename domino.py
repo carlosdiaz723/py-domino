@@ -374,8 +374,11 @@ class GameMaster:
             self.maxWins = None
         else:
             self.maxWins = maxWins
+        if trace in [None, '', False, 'false', 'False']:
+            self.trace = False
+        else:
+            self.trace = trace
         self.maxGames = int(maxGames)
-        self.trace = trace
         self.startingPlayer = startingPlayer
         self.gamesPlayed = 0
         self.pieceSetup()
