@@ -2,6 +2,7 @@ from pprint import pprint as pretty
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import sys
 
 
 class Piece:
@@ -432,29 +433,17 @@ class GameMaster:
         plt.show()
 
 
-tuples = [(6, 6),
-          (6, 5), (5, 5),
-          (6, 4), (5, 4), (4, 4),
-          (6, 3), (5, 3), (4, 3), (3, 3),
-          (6, 2), (5, 2), (4, 2), (3, 2), (2, 2),
-          (6, 1), (5, 1), (4, 1), (3, 1), (2, 1), (1, 1),
-          (6, 0), (5, 0), (4, 0), (3, 0), (2, 0), (1, 0), (0, 0)
-          ]
-allPieces = list()
-for t in tuples:
-    allPieces.append(Piece(t))
-
 r = 'random'
 dol = 'doubleOrLargest'
 allRandom = [r, r, r, r]
 allDol = [dol, dol, dol, dol]
-
 
 names = ['John', 'Sally', 'Jane', 'Dan']
 # first game order is always as set above
 startingPlayer = 'winner'
 startingStrategies = allDol
 strategies = allRandom
+
 gamemaster = GameMaster(names, strategies=strategies,
                         startingStrategies=startingStrategies,
                         startingPlayer=startingPlayer, maxGames=500)
