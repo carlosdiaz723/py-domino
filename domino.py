@@ -105,8 +105,9 @@ class Game:
     end1, end2          int, int            the current ends of the table
     '''
 
-    def __init__(self, players: list):
-        self.currentAvailable = allPieces[:]
+    def __init__(self, players: list, allPieces: list()):
+        self.allPieces = allPieces
+        self.currentAvailable = self.allPieces[:]
         self.table, self.end1, self.end2 = list(), int(), int()
         self.closes = 0
         self.capicuaWin = False
@@ -121,7 +122,7 @@ class Game:
         self.table.clear()
         self.capicuaWin = False
         self.end1, self.end2 = int(), int()
-        self.currentAvailable = allPieces[:]
+        self.currentAvailable = self.allPieces[:]
 
     def shuffle(self):
         '''
@@ -338,9 +339,23 @@ class GameMaster:
         self.maxGames = maxGames
         self.startingPlayer = startingPlayer
         self.gamesPlayed = 0
-        self.game = Game(self.players)
+        self.pieceSetup()
+        self.game = Game(self.players, self.allPieces)
         self.maxScore = maxScore
         self.maxWins = maxWins
+
+    def pieceSetup(self):
+        tuples = [(6, 6),
+                  (6, 5), (5, 5),
+                  (6, 4), (5, 4), (4, 4),
+                  (6, 3), (5, 3), (4, 3), (3, 3),
+                  (6, 2), (5, 2), (4, 2), (3, 2), (2, 2),
+                  (6, 1), (5, 1), (4, 1), (3, 1), (2, 1), (1, 1),
+                  (6, 0), (5, 0), (4, 0), (3, 0), (2, 0), (1, 0), (0, 0)
+                  ]
+        self.allPieces = list()
+        for t in tuples:
+            self.allPieces.append(Piece(t))
 
     def finish(self):
         master = dict()
