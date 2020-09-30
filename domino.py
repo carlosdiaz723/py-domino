@@ -2,6 +2,7 @@ from pprint import pprint as pretty
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import tkinter as tk
 
 
 class Piece:
@@ -249,7 +250,7 @@ class Game:
         them so that adjacent pieces correctly fit with each other
         '''
         if len(self.table) == 0:
-            return "Empty"
+            return 'Empty'
 
         master = str(self.table[0].values) + ' '
         if len(self.table) == 1:
@@ -355,9 +356,9 @@ class GameMaster:
     handles multiple games and keeps track of stats
     '''
 
-    def __init__(self, playerNames: list, strategies: list,
-                 startingStrategies: list, maxGames=1, maxScore=None,
-                 maxWins=None, startingPlayer='random'):
+    def __init__(self, playerNames: list, startingStrategies: list,
+                 strategies: list, maxGames: int, startingPlayer: str,
+                 maxScore, maxWins, trace: bool):
         self.playerNames = playerNames
         self.strategies = strategies
         self.startingStrategies = startingStrategies
@@ -365,13 +366,20 @@ class GameMaster:
         for index, name in enumerate(playerNames):
             self.players.append(
                 Player(name, strategies[index], startingStrategies[index]))
-        self.maxGames = maxGames
+        if maxScore in [None, '', False]:
+            self.maxScore = None
+        else:
+            self.maxScore = maxScore
+        if maxWins in [None, '', False]:
+            self.maxWins = None
+        else:
+            self.maxWins = maxWins
+        self.maxGames = int(maxGames)
+        self.trace = trace
         self.startingPlayer = startingPlayer
         self.gamesPlayed = 0
         self.pieceSetup()
         self.game = Game(self.players, self.allPieces)
-        self.maxScore = maxScore
-        self.maxWins = maxWins
 
     def pieceSetup(self):
         tuples = [(6, 6),
@@ -413,12 +421,12 @@ class GameMaster:
         master['max_score'] = self.maxScore
         return master
 
-    def run(self, trace=False):
+    def run(self):
         for _ in range(self.maxGames):
             self.game.reset()
             self.game.shuffle()
-            winner, score = self.game.start(trace)
-            if trace:
+            winner, score = self.game.start(self.trace)
+            if self.trace:
                 print('Player: {} WINS'.format(winner.name))
             winner.wins += 1
             for player in self.game.players:
@@ -461,23 +469,100 @@ class GameMaster:
         plt.show()
 
 
-# presets
-r = 'random'
-dol = 'doubleOrLargest'
-allRandom = [r, r, r, r]
-allDol = [dol, dol, dol, dol]
+def masterRun():
+    names = list()
+    for n in nameFields:
+        names.append(n.get())
+    startingStrategies = list()
+    for n in startingStrategyFields:
+        startingStrategies.append(n.get())
+    strategies = list()
+    for n in strategyFields:
+        strategies.append(n.get())
+    startingPlayer = startingPlayerField.get()
+    maxGames = maxGamesField.get()
+    maxScore = maxScoreField.get()
+    maxWins = maxWinsField.get()
+    trace = traceField.get()
+    gamemaster = GameMaster(names, startingStrategies, strategies, maxGames,
+                            startingPlayer, maxScore, maxWins, trace)
+    result = gamemaster.run()
+    pretty(result)
+    gamemaster.plotHelp()
 
 
-names = ['Sally', 'John', 'Jane', 'Dan']
-# first game order is always as set above
+def clearFields():
+    for i in range(4):
+        nameFields[i].delete(0, tk.END)
+        startingStrategyFields[i].delete(0, tk.END)
+        strategyFields[i].delete(0, tk.END)
+    startingPlayerField.delete(0, tk.END)
+    traceField.delete(0, tk.END)
+    maxGamesField.delete(0, tk.END)
+    maxScoreField.delete(0, tk.END)
+    maxWinsField.delete(0, tk.END)
 
-startingPlayer = 'winner'
-startingStrategies = allRandom
-strategies = ['maxOptions', r, r, r]
 
-gamemaster = GameMaster(names, strategies=strategies,
-                        startingStrategies=startingStrategies,
-                        startingPlayer=startingPlayer, maxGames=25_000)
-result = gamemaster.run(trace=False)
-pretty(result)
-gamemaster.plotHelp()
+def fillDefaults():
+    clearFields()
+    # defaults
+    r = 'random'
+    defaultNames = ['Sally', 'John', 'Jane', 'Dan']
+    defaultStartingPlayer = 'winner'
+    defaultStartingStrategies = [r, r, r, r]
+    defaultStrategies = [r, r, r, r]
+    defaultStartingPlayer = 'winner'
+    defaultTrace = 'False'
+    defaultMaxGames = 10_000
+
+    for i in range(4):
+        nameFields[i].insert(0, defaultNames[i])
+        startingStrategyFields[i].insert(0, defaultStartingStrategies[i])
+        strategyFields[i].insert(0, defaultStrategies[i])
+    startingPlayerField.insert(0, defaultStartingPlayer)
+    traceField.insert(0, defaultTrace)
+    maxGamesField.insert(0, defaultMaxGames)
+
+
+master = tk.Tk()
+master.title('Domino Simulation Inputs')
+tk.Button(master, text='Abort', command=exit).grid(row=10, column=0)
+tk.Button(master, text='Defaults', command=fillDefaults).grid(row=10, column=2)
+tk.Button(master, text='Submit', command=masterRun).grid(row=10, column=4)
+
+nameFields, startingStrategyFields, strategyFields = list(), list(), list()
+for i in range(4):
+    tk.Label(master, text='Name {}:'.format(i+1)).grid(row=i)
+    e = tk.Entry(master)
+    e.grid(row=i, column=1)
+    nameFields.append(e)
+    tk.Label(master, text='Starting Strategy:').grid(row=i, column=2)
+    e = tk.Entry(master)
+    e.grid(row=i, column=3)
+    startingStrategyFields.append(e)
+    tk.Label(master, text='Game Strategy:').grid(row=i, column=4)
+    e = tk.Entry(master)
+    e.grid(row=i, column=5)
+    strategyFields.append(e)
+
+tk.Label(master, text='starting Player:').grid(row=6, column=0)
+startingPlayerField = tk.Entry(master)
+startingPlayerField.grid(row=6, column=1)
+
+tk.Label(master, text='trace?').grid(row=6, column=2)
+traceField = tk.Entry(master)
+traceField.grid(row=6, column=3)
+
+tk.Label(master, text='max # of games:').grid(row=7, column=0)
+maxGamesField = tk.Entry(master)
+maxGamesField.grid(row=7, column=1)
+
+tk.Label(master, text='max score:').grid(row=7, column=2)
+maxScoreField = tk.Entry(master)
+maxScoreField.grid(row=7, column=3)
+
+tk.Label(master, text='max # of wins:').grid(row=7, column=4)
+maxWinsField = tk.Entry(master)
+maxWinsField.grid(row=7, column=5)
+
+tk.mainloop()
